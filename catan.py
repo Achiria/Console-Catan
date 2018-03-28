@@ -13,7 +13,6 @@ class bcolors:
     UNDERLINE = '\033[4m'
 	
 class coord(object):
-
 	# initialize the coordinate object
 	#
 	# @param x        the x coordinate
@@ -35,29 +34,13 @@ class coord(object):
 	# @return will return the coordinate in format (x, y)
 	def __str__(self):
 		return "(" + str(self.y) + ", " + str(self.x) + ") water: " + str(self.water) + " pointType: " + str(self.pointType) + " building: " + str(self.building)
-		
-class buildCoord(coord):
-	def __init__(self, x, y, water, building=0, owner=None):
-		self.x = x
-		self.y = y
-		self.water = water
-		self.building = building
-		self.owner = owner
-	
-class roadCoord(coord):
-	def __init__(self, x, y, water, road=0, owner=None):
-		self.x = x
-		self.y = y
-		self.water = water
-		self.road = road
-		self.owner = owner
-		
+
 class tilePart(object):
-	def __init__(self, x, y, ownedCoords):
+	def __init__(self, x, y, ownedCoords=[]):
 		self.x = x
 		self.y = y
 		self.ownedCoords = ownedCoords
-
+        
 class tileWhole():
 	def __init__(self, topTile, bottomTile, resource, shutdown=0):
 		self.topTile = topTile
@@ -69,7 +52,17 @@ class board():
     def __init__(self, points, tiles):
         self.points = points
         self.tiles = tiles
-		
+		    
+class player():
+    def __init__(self, name):
+        self.name = name
+        self.cards = {'hay': 0, 'sheep': 0, 'wood': 0, 'brick': 0, 'ore': 0}
+        self.points = 0
+        self.settlemtnCount = 5
+        self.cityCount = 4
+        self.roadCount = 15
+        self.devCards = []
+    
 
 size = 29
 width = size
