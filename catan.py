@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
+
 from __future__ import print_function
 from collections import deque
 import math
@@ -19,6 +22,22 @@ class commands:
     creatingGame = ['exit']
     choosingColor = ['blue', 'green', 'red', 'yellow', 'exit']
 
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        if ord(ch) == 3 or ord(ch) == 26:
+            sys.exit()
+        return ch
 	
 class coord(object):
 	# initialize the coordinate object
@@ -29,13 +48,14 @@ class coord(object):
 	# @param pointType     0 if none, 1 if road up type, 2 if road flat type, 3 if road down type, 4 if building type, 5 if resource type
 	# @param building 0 if no building, 1 if road or settlement, 2 if city
 	# @param owner    the ID of the player who owns the building if any
-	def __init__(self, x, y, water, pointType, building=0, owner=None):
-		self.x = x
-		self.y = y
-		self.water = water
-		self.pointType = pointType
-		self.building = building
-		self.owner = owner
+    def __init__(self, x, y, water, pointType, building=0, owner=None):
+        self.x = x
+        self.y = y
+        self.water = water
+        self.pointType = pointType
+        self.building = building
+        self.owner = owner
+        self.active = 0
 
 	# overwrite the print function
     #
@@ -114,8 +134,12 @@ class pointGrid():
                 else:
                     color = bcolors.ENDC
                 
+                # if highlighted
+                if (points[y][x].active == 1):
+                    color = bcolors.HEADER
+                    toPrint = unichr(9608).encode('utf-8')
                 # if empty or resource type
-                if (points[y][x].pointType == 0):
+                elif (points[y][x].pointType == 0):
                     toPrint = " "
                 # if road up type
                 elif (points[y][x].pointType == 1):
@@ -133,22 +157,39 @@ class pointGrid():
                         toPrint = "_"
                     # if settlement
                     elif (points[y][x].building == 1):
-                        toPrint = "."
+                        toPrint = bcolors.FAIL + unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
                     # if city
                     elif (points[y][x].building == 2):
-                        toPrint = ","
+                        toPrint = bcolors.FAIL + unichr(5169).encode('utf-8') + unichr(831).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
                 elif (points[y][x].pointType == 5):
                     toPrint = " "
                 toReturn += color + toPrint + bcolors.ENDC
         
         return toReturn
 
+    def getPoint(self, x, y):
+        return self.points[y][x]
+
+    def moveCursor(self, currentPosition, direction):
+        currentPosition.active = 0
+        if direction == 'up':
+            currentPosition = self.points[currentPosition.y-1][currentPosition.x]
+        if direction == 'down':
+            currentPosition = self.points[currentPosition.y+1][currentPosition.x]
+        if direction == 'left':
+            currentPosition = self.points[currentPosition.y][currentPosition.x-1]
+        if direction == 'right':
+            currentPosition = self.points[currentPosition.y][currentPosition.x+1]
+        currentPosition.active = 1
+        return currentPosition
+
 class board():
     def __init__(self, points):
         print("")
 		    
 class player():
-    def __init__(self, name, color):
+    def __init__(self, number, name, color):
+        self.number = number
         self.name = name
         self.color = color
         self.cards = {'hay': 0, 'sheep': 0, 'wood': 0, 'brick': 0, 'ore': 0}
@@ -202,8 +243,73 @@ def checkCommand(command):
         else:
             return 1
 
+def placeSettlement(player):
+    cursorPosition = points.getPoint(0, 0)
+    cursorPosition.active = 1
+    
+    placed = 0
+    while placed == 0:
+        # print(chr(27) + "[2J")
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')  
+        elif ord(typed) == 13:
+            if cursorPosition.water == 0:
+                if cursorPosition.pointType == 4:
+                    if cursorPosition.building == 0:
+                        cursorPosition.building = 1
+                        cursorPosition.owner = player.number
+                        player.settlementCount -= 1
+                        placed = 1
+                        cursorPosition.active = 0
+        print(ord(typed))
+
+def placeCity(player):
+    cursorPosition = points.getPoint(0, 0)
+    cursorPosition.active = 1
+    
+    placed = 0
+    while placed == 0:
+        # print(chr(27) + "[2J")
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')  
+        elif ord(typed) == 13:
+            if cursorPosition.water == 0:
+                if cursorPosition.pointType == 4:
+                    if cursorPosition.building == 1:
+                        if cursorPosition.owner == player.number:
+                            cursorPosition.building = 2
+                            player.settlementCount += 1
+                            player.cityCount += 1
+                            placed = 1
+                            cursorPosition.active = 0
+        print(ord(typed))
 
 
+
+# points = pointGrid(29)
+# player = player(0, 'test', 'blue')
+# placeSettlement(player)
+# placeCity(player)
+
+# print(points)
 
 commandStack = []
 availableCommands = commands.start
@@ -214,11 +320,15 @@ currentPlayer = None
 inGame = 0
 
 print(chr(27) + "[2J")
+# print(bcolors.HEADER + unichr(9608) + bcolors.ENDC)
 print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
 # time.sleep(1.5)
 print("Type help at any time to see your available commands.")
 # time.sleep(1.5)
 command = raw_input("Type start to begin a new game: ")
+
+
+points = pointGrid(29)
 
 print(chr(27) + "[2J")
 print("Creating new game.")
@@ -272,13 +382,20 @@ for item in range(numberOfPlayers):
         print(command)
         commands.choosingColor.remove(command)
         color = command
-    players.append(player(name, color))
+    print(item)
+    players.append(player(item, name, color))
 
-
-
-
-# points = pointGrid(29)
-# print(points)
+print(chr(27) + "[2J")
+print("Creating new game.")
+print("Placing Settlements and Roads\n")
+for item in range(numberOfPlayers):
+    player = players[item]
+    name = 0
+    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+    placeSettlement(player)
+    print(points)
+    
+    
 
 
 # command = raw_input("Player: " + "" + ". Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
