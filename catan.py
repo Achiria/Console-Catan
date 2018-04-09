@@ -157,7 +157,16 @@ class pointGrid():
                         toPrint = "_"
                     # if settlement
                     elif (points[y][x].building == 1):
-                        toPrint = bcolors.FAIL + unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
+                        ownerColor = points[y][x].owner.color
+                        if ownerColor == "red":
+                            color = bcolors.FAIL
+                        elif ownerColor == "blue":
+                            color = bcolors.OKBLUE
+                        elif ownerColor == "green":
+                            color = bcolors.OKGREEN
+                        elif ownerColor == "yellow"
+                            color = bcolors.WARNING
+                        toPrint = unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
                     # if city
                     elif (points[y][x].building == 2):
                         toPrint = bcolors.FAIL + unichr(5169).encode('utf-8') + unichr(831).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
@@ -171,11 +180,16 @@ class pointGrid():
         return self.points[y][x]
 
     def moveCursor(self, currentPosition, direction):
+        print(self.height)
+        print(currentPosition.y)
         currentPosition.active = 0
         if direction == 'up':
             currentPosition = self.points[currentPosition.y-1][currentPosition.x]
         if direction == 'down':
-            currentPosition = self.points[currentPosition.y+1][currentPosition.x]
+            if currentPosition.y == self.height - 1:
+                currentPosition = self.points[0][currentPosition.x]
+            else:
+                currentPosition = self.points[currentPosition.y+1][currentPosition.x]
         if direction == 'left':
             currentPosition = self.points[currentPosition.y][currentPosition.x-1]
         if direction == 'right':
@@ -266,7 +280,7 @@ def placeSettlement(player):
                 if cursorPosition.pointType == 4:
                     if cursorPosition.building == 0:
                         cursorPosition.building = 1
-                        cursorPosition.owner = player.number
+                        cursorPosition.owner = player
                         player.settlementCount -= 1
                         placed = 1
                         cursorPosition.active = 0
@@ -390,7 +404,7 @@ print("Creating new game.")
 print("Placing Settlements and Roads\n")
 for item in range(numberOfPlayers):
     player = players[item]
-    name = 0
+    print(player.color)
     print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
     placeSettlement(player)
     print(points)
