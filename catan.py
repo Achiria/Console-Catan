@@ -141,22 +141,13 @@ class pointGrid():
                 # if empty or resource type
                 elif (points[y][x].pointType == 0):
                     toPrint = " "
-                # if road up type
-                elif (points[y][x].pointType == 1):
-                    toPrint = "/"
-                # if road flat type
-                elif (points[y][x].pointType == 2):
-                    toPrint = "_"
-                # if road down type
-                elif (points[y][x].pointType == 3):
-                    toPrint = "\\"
-                # if building type
-                elif (points[y][x].pointType == 4):
-                    # if no building
-                    if (points[y][x].building == 0):
-                        toPrint = "_"
-                    # if settlement
-                    elif (points[y][x].building == 1):
+                # if empty type
+                elif (points[y][x].pointType == 5):
+                    toPrint = " "
+                # if building or any road type
+                else:
+                    # if any building present get owner color
+                    if points[y][x].building != 0:
                         ownerColor = points[y][x].owner.color
                         if ownerColor == "red":
                             color = bcolors.FAIL
@@ -164,16 +155,29 @@ class pointGrid():
                             color = bcolors.OKBLUE
                         elif ownerColor == "green":
                             color = bcolors.OKGREEN
-                        elif ownerColor == "yellow"
+                        elif ownerColor == "yellow":
                             color = bcolors.WARNING
-                        toPrint = unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
-                    # if city
-                    elif (points[y][x].building == 2):
-                        toPrint = bcolors.FAIL + unichr(5169).encode('utf-8') + unichr(831).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
-                elif (points[y][x].pointType == 5):
-                    toPrint = " "
-                toReturn += color + toPrint + bcolors.ENDC
-        
+                    # if road up type
+                    if (points[y][x].pointType == 1):
+                        toPrint = "/"
+                    # if road flat type
+                    elif (points[y][x].pointType == 2):
+                        toPrint = "_"
+                    # if road down type
+                    elif (points[y][x].pointType == 3):
+                        toPrint = "\\"
+                    # if building type
+                    elif (points[y][x].pointType == 4):
+                        # if no building
+                        if (points[y][x].building == 0):
+                            toPrint = "_"
+                        # if settlement
+                        elif (points[y][x].building == 1):                            
+                            toPrint = unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
+                        # if city
+                        elif (points[y][x].building == 2):
+                            toPrint = unichr(5169).encode('utf-8') + unichr(831).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
+                toReturn += color + toPrint + bcolors.ENDC  
         return toReturn
 
     def getPoint(self, x, y):
@@ -257,7 +261,59 @@ def checkCommand(command):
         else:
             return 1
 
+def checkCards(command, player):
+    if command == "road":
+        if player.cards.get('wood') > 1 and player.cards.get('brick'):
+            return 1
+    elif command == "settlement":
+        if player.cards.get('hay') > 1 and player.cards.get('sheep') > 1 and player.cards.get('wood') > 1 and player.cards.get('brick') > 1:
+            return 1
+    elif command == "city":
+        if player.cards.get('hay') > 2 and player.cards.get('ore') > 3:
+            return 1
+    elif command == "devCard":
+        if player.cards.get('hay') > 1 and player.cards.get('sheep') > 1 and player.cards.get('ore') > 1:
+            return 1
+    return 0
+
+def placeRoad(player):
+    if player.roadCount < 1:   
+        print("Not enough roads.")
+        return 0
+
+    cursorPosition = points.getPoint(0, 0)
+    cursorPosition.active = 1
+    
+    placed = 0
+    while placed == 0:
+        # print(chr(27) + "[2J")
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')  
+        elif ord(typed) == 13:
+            if cursorPosition.water == 0:
+                if cursorPosition.pointType == 1 or cursorPosition.pointType == 2 or cursorPosition.pointType == 3:
+                    if cursorPosition.building == 0:
+                        cursorPosition.building = 1
+                        cursorPosition.owner = player
+                        player.roadCount -= 1
+                        placed = 1
+                        cursorPosition.active = 0
+                        return 1
+
 def placeSettlement(player):
+    if player.settlementCount < 1:
+        print("Not enough settlements.")
+        return 0
+
     cursorPosition = points.getPoint(0, 0)
     cursorPosition.active = 1
     
@@ -284,9 +340,14 @@ def placeSettlement(player):
                         player.settlementCount -= 1
                         placed = 1
                         cursorPosition.active = 0
-        print(ord(typed))
+                        return 1
+        # print(ord(typed))
 
 def placeCity(player):
+    if player.cityCount < 1:   
+        print("Not enough cities.")
+        return 0
+
     cursorPosition = points.getPoint(0, 0)
     cursorPosition.active = 1
     
@@ -311,10 +372,11 @@ def placeCity(player):
                         if cursorPosition.owner == player.number:
                             cursorPosition.building = 2
                             player.settlementCount += 1
-                            player.cityCount += 1
+                            player.cityCount -= 1
                             placed = 1
                             cursorPosition.active = 0
-        print(ord(typed))
+                            return 1
+        # print(ord(typed))
 
 
 
@@ -407,8 +469,11 @@ for item in range(numberOfPlayers):
     print(player.color)
     print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
     placeSettlement(player)
+    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+    placeRoad(player)
     print(points)
     
+print("Beginning game.")
     
 
 
