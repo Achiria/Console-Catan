@@ -9,6 +9,7 @@ import sys
 import time
 
 class bcolors:
+    PLAYERBLUE = '\\e[0;94m'
     OKBLUE = '\033[94m'
     HEADER = '\033[95m'
     OKGREEN = '\033[92m'
@@ -175,10 +176,11 @@ class pointGrid():
                         # if settlement
                         elif (points[y][x].building == 1):                            
                             # toPrint = chr(5169).encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
-                            toPrint = "∆".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                            toPrint = "π".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
                         # if city
                         elif (points[y][x].building == 2):
-                            toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
+                            # toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
+                            toPrint = "∆".encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
                 try:
                     toAdd = color + toPrint.decode('utf-8') + bcolors.ENDC
                 except (UnicodeDecodeError, AttributeError):
@@ -410,7 +412,7 @@ players = []
 currentPlayer = None
 inGame = 0
 
-clear()
+# clear()
 # print(chr(27) + "[2J")
 # print(bcolors.HEADER + chr(9608) + bcolors.ENDC)
 print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
@@ -418,6 +420,8 @@ print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
 print("Type help at any time to see your available commands.")
 # time.sleep(1.5)
 command = input("Type start to begin a new game: ")
+if command == "exit":
+
 
 
 points = pointGrid(29)
@@ -491,19 +495,20 @@ for item in range(numberOfPlayers):
     
 print("Beginning game.")
     
+for currentPlayer in players:
+    print(currentPlayer.name + ", it is your turn.\n")
 
+command = input("Player: " + "" + ". Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
-# command = input("Player: " + "" + ". Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
-
-# # user selected "build"
-# if (command == "b"):
-#     commandTwo = input("(Building) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
-# # user selected "trade"
-# elif (command == "t"):
-#     commandTwo = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
-#     # user selected to trade with play
-#     if (commandTwo == "p"):
-#         commandThree = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+# user selected "build"
+if (command == "b"):
+    commandTwo = input("(Building) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
+# user selected "trade"
+elif (command == "t"):
+    commandTwo = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
+    # user selected to trade with play
+    if (commandTwo == "p"):
+        commandThree = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
 
         
 # print("\nEntered: " + command)
