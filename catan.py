@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from collections import deque
+from os import system, name
 import math
 import sys
 import time
@@ -173,7 +174,8 @@ class pointGrid():
                             toPrint = "_"
                         # if settlement
                         elif (points[y][x].building == 1):                            
-                            toPrint = chr(5169).encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                            # toPrint = chr(5169).encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                            toPrint = "∆".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
                         # if city
                         elif (points[y][x].building == 2):
                             toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
@@ -282,7 +284,7 @@ def checkCards(command, player):
 
 def placeRoad(player):
     if player.roadCount < 1:   
-        print("Not enough roads.")
+        print("Not enough roads")
         return 0
 
     cursorPosition = points.getPoint(0, 0)
@@ -291,6 +293,7 @@ def placeRoad(player):
     placed = 0
     while placed == 0:
         # print(chr(27) + "[2J")
+        clear()
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
@@ -324,6 +327,7 @@ def placeSettlement(player):
     placed = 0
     while placed == 0:
         # print(chr(27) + "[2J")
+        clear()
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
@@ -382,7 +386,14 @@ def placeCity(player):
                             return 1
         # print(ord(typed))
 
-
+def clear(): 
+    # for windows 
+    if name == 'nt': 
+        _ = system('cls') 
+  
+    # for mac and linux(here, os.name is 'posix') 
+    else: 
+        _ = system('clear') 
 
 # points = pointGrid(29)
 # player = player(0, 'test', 'blue')
@@ -399,7 +410,8 @@ players = []
 currentPlayer = None
 inGame = 0
 
-print(chr(27) + "[2J")
+clear()
+# print(chr(27) + "[2J")
 # print(bcolors.HEADER + chr(9608) + bcolors.ENDC)
 print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
 # time.sleep(1.5)
@@ -410,7 +422,7 @@ command = input("Type start to begin a new game: ")
 
 points = pointGrid(29)
 
-print(chr(27) + "[2J")
+# print(chr(27) + "[2J")
 print("Creating new game.")
 
 inGame = 1
