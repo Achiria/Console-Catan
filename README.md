@@ -4,9 +4,9 @@ A python program that runs a game of Catan in the terminal.
 ## Support
 I can only guarantee functionality on the following environments
 
-### Linux
-Python version: 2.6.6
-Developed on: UEK 3.8
+### Unix
+Python version: 3.8.2
+Developed on: UEK 3.8 and OSX 11.2
 
 ### Windows
 Requires [ansicon](https://github.com/adoxa/ansicon)

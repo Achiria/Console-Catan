@@ -3,12 +3,24 @@
 
 from __future__ import print_function
 from collections import deque
+from os import system, name
 import math
 import sys
 import time
+import random
 
 class bcolors:
-    OKBLUE = '\033[94m'
+    PLAYERBLUE = '\033[1;94m'
+    PLAYERRED = '\033[1;91m'
+    PLAYERYELLOW = '\033[1;93m'
+    PLAYERGREEN = '\033[1;92m'
+    PLAYERPURPLE = '\033[1;95m'
+
+
+    WATER = '\033[34m'
+    WATERSOLID = '\033[34m\033[0;104m'
+    
+    OKBLUE = '\033[34m'
     HEADER = '\033[95m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
@@ -18,9 +30,10 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 class commands:
-    start = ['start', 'exit']
+    start = ['start', 'load', 'exit']
     creatingGame = ['exit']
-    choosingColor = ['blue', 'green', 'red', 'yellow', 'exit']
+    choosingColor = ['blue', 'green', 'red', 'yellow', 'purple', 'exit']
+    startOfTurn = ['roll', 'play']
 
 class _GetchUnix:
     def __init__(self):
@@ -38,16 +51,16 @@ class _GetchUnix:
         if ord(ch) == 3 or ord(ch) == 26:
             sys.exit()
         return ch
-	
+    
 class coord(object):
-	# initialize the coordinate object
-	#
-	# @param x        the x coordinate
-	# @param y        the y coordinate
-	# @param water    0 if coordinate is on land, 1 if in water
-	# @param pointType     0 if none, 1 if road up type, 2 if road flat type, 3 if road down type, 4 if building type, 5 if resource type
-	# @param building 0 if no building, 1 if road or settlement, 2 if city
-	# @param owner    the ID of the player who owns the building if any
+    # initialize the coordinate object
+    #
+    # @param x        the x coordinate
+    # @param y        the y coordinate
+    # @param water    0 if coordinate is on land, 1 if in water
+    # @param pointType     0 if none, 1 if road up type, 2 if road flat type, 3 if road down type, 4 if building type, 5 if resource type
+    # @param building 0 if no building, 1 if road or settlement, 2 if city
+    # @param owner    the ID of the player who owns the building if any
     def __init__(self, x, y, water, pointType, building=0, owner=None):
         self.x = x
         self.y = y
@@ -57,24 +70,24 @@ class coord(object):
         self.owner = owner
         self.active = 0
 
-	# overwrite the print function
+    # overwrite the print function
     #
-	# @return will return the coordinate in format (x, y)
-	def __str__(self):
-		return "(" + str(self.y) + ", " + str(self.x) + ") water: " + str(self.water) + " pointType: " + str(self.pointType) + " building: " + str(self.building)
+    # @return will return the coordinate in format (x, y)
+    def __str__(self):
+        return "(" + str(self.y) + ", " + str(self.x) + ") water: " + str(self.water) + " pointType: " + str(self.pointType) + " building: " + str(self.building)
 
 class tilePart(object):
-	def __init__(self, x, y, ownedCoords=[]):
-		self.x = x
-		self.y = y
-		self.ownedCoords = ownedCoords
+    def __init__(self, x, y, ownedCoords=[]):
+        self.x = x
+        self.y = y
+        self.ownedCoords = ownedCoords
         
 class tileWhole():
-	def __init__(self, topTile, bottomTile, resource, shutdown=0):
-		self.topTile = topTile
-		self.bottomTile = bottomTile
-		self.resource = resource
-		self.shutdown = shutdown
+    def __init__(self, topTile, bottomTile, resource, shutdown=0):
+        self.topTile = topTile
+        self.bottomTile = bottomTile
+        self.resource = resource
+        self.shutdown = shutdown
 
 class pointGrid():
     def __init__(self, size):
@@ -130,16 +143,17 @@ class pointGrid():
                 toReturn += "\n"
             for x in range(width):
                 if (points[y][x].water == 1):
-                    color = bcolors.OKBLUE
+                    color = bcolors.WATER
                 else:
                     color = bcolors.ENDC
                 
                 # if highlighted
                 if (points[y][x].active == 1):
                     color = bcolors.HEADER
-                    toPrint = unichr(9608).encode('utf-8')
+                    toPrint = chr(9608).encode('utf-8')
                 # if empty or resource type
                 elif (points[y][x].pointType == 0):
+                    # print resource type
                     toPrint = " "
                 # if empty type
                 elif (points[y][x].pointType == 5):
@@ -150,13 +164,15 @@ class pointGrid():
                     if points[y][x].building != 0:
                         ownerColor = points[y][x].owner.color
                         if ownerColor == "red":
-                            color = bcolors.FAIL
+                            color = bcolors.PLAYERRED
                         elif ownerColor == "blue":
-                            color = bcolors.OKBLUE
+                            color = bcolors.PLAYERBLUE
                         elif ownerColor == "green":
-                            color = bcolors.OKGREEN
+                            color = bcolors.PLAYERGREEN
                         elif ownerColor == "yellow":
-                            color = bcolors.WARNING
+                            color = bcolors.PLAYERYELLOW
+                        elif ownerColor == "purple":
+                            color = bcolors.PLAYERPURPLE
                     # if road up type
                     if (points[y][x].pointType == 1):
                         toPrint = "/"
@@ -173,11 +189,17 @@ class pointGrid():
                             toPrint = "_"
                         # if settlement
                         elif (points[y][x].building == 1):                            
-                            toPrint = unichr(5169).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
+                            # toPrint = chr(5169).encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                            toPrint = "π".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
                         # if city
                         elif (points[y][x].building == 2):
-                            toPrint = unichr(5169).encode('utf-8') + unichr(831).encode('utf-8') + bcolors.ENDC + unichr(818).encode('utf-8')
-                toReturn += color + toPrint + bcolors.ENDC  
+                            # toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
+                            toPrint = "∆".encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
+                try:
+                    toAdd = color + toPrint.decode('utf-8') + bcolors.ENDC
+                except (UnicodeDecodeError, AttributeError):
+                    toAdd = color + toPrint + bcolors.ENDC
+                toReturn += toAdd
         return toReturn
 
     def getPoint(self, x, y):
@@ -204,7 +226,7 @@ class pointGrid():
 class board():
     def __init__(self, points):
         print("")
-		    
+            
 class player():
     def __init__(self, number, name, color):
         self.number = number
@@ -217,6 +239,14 @@ class player():
         self.roadCount = 15
         self.devCards = []
     
+    def __str__(self):
+        toReturn = ""
+        return toReturn
+    
+    def getCards(self):
+        return ('hay: ' + str(self.cards['hay']) + ', sheep: ' + str(self.cards['sheep']) + ', wood: ' + str(self.cards['wood']) + ', brick: ' + str(self.cards['brick']) + ', ore: ' + str(self.cards['ore']))
+
+
 def checkCommand(command):
     commandStack.append(command)
     if (command == "help"):
@@ -226,28 +256,22 @@ def checkCommand(command):
             print(item + " ", end="")
         print("")
         # time.sleep(1.5)
-        command = raw_input("Enter one of the available commands: ")
+        command = input("Enter one of the available commands: ")
         checkCommand(command)
     elif (command == "exit"):
         if inGame:
-            command = raw_input("Any unsaved progress will be lost; are you sure you want to quit? y/n: ")
+            command = input("Any unsaved progress will be lost; are you sure you want to quit? y/n: ")
             valid = 0
             while valid == 0:
                 if command == "y":
-                    print("Thanks for playing. Exiting Console Catan.")
-                    time.sleep(1.5)
-                    print(chr(27) + "[2J")
-                    sys.exit()
+                    exit()
                 elif command == "n":
                     print("Your game probably just broke. Sorry.")
                     return 0
                 else:
-                    command = raw_input("Please enter y or n: ")
+                    command = input("Please enter y or n: ")
         else:
-            print("Thanks for playing. Exiting Console Catan.")
-            time.sleep(1.5)
-            print(chr(27) + "[2J")
-            sys.exit()
+            exit()
     else:
         validCommand = 0
         for item in iter(availableCommands):
@@ -256,7 +280,7 @@ def checkCommand(command):
                 break
         if validCommand == 0:
             commandStack.pop()
-            newCommand = raw_input("Command not available. Type help to see available commands or enter valid command: ")
+            newCommand = input("Command not available. Type help to see available commands or enter valid command: ")
             checkCommand(newCommand)
         else:
             return 1
@@ -276,9 +300,12 @@ def checkCards(command, player):
             return 1
     return 0
 
+def rollDice():
+    return random.randint(1, 6) + random.randint(1, 6)
+    
 def placeRoad(player):
     if player.roadCount < 1:   
-        print("Not enough roads.")
+        print("Not enough roads")
         return 0
 
     cursorPosition = points.getPoint(0, 0)
@@ -287,6 +314,7 @@ def placeRoad(player):
     placed = 0
     while placed == 0:
         # print(chr(27) + "[2J")
+        clear()
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
@@ -320,6 +348,7 @@ def placeSettlement(player):
     placed = 0
     while placed == 0:
         # print(chr(27) + "[2J")
+        clear()
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
@@ -378,7 +407,20 @@ def placeCity(player):
                             return 1
         # print(ord(typed))
 
+def clear(): 
+    # for windows 
+    if name == 'nt': 
+        _ = system('cls') 
+  
+    # for mac and linux(here, os.name is 'posix') 
+    else: 
+        _ = system('clear') 
 
+def exit(): 
+    print("Thanks for playing. Exiting Console Catan.")
+    time.sleep(1.5)
+    clear()
+    sys.exit()
 
 # points = pointGrid(29)
 # player = player(0, 'test', 'blue')
@@ -386,6 +428,11 @@ def placeCity(player):
 # placeCity(player)
 
 # print(points)
+
+
+
+
+
 
 commandStack = []
 availableCommands = commands.start
@@ -395,56 +442,55 @@ players = []
 currentPlayer = None
 inGame = 0
 
-print(chr(27) + "[2J")
-# print(bcolors.HEADER + unichr(9608) + bcolors.ENDC)
+# clear()
+# print(chr(27) + "[2J")
+# print(bcolors.HEADER + chr(9608) + bcolors.ENDC)
 print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
 # time.sleep(1.5)
 print("Type help at any time to see your available commands.")
 # time.sleep(1.5)
-command = raw_input("Type start to begin a new game: ")
-
+command = input("Type start to begin a new game: ")
+if command == "exit":
+    exit()
 
 points = pointGrid(29)
 
-print(chr(27) + "[2J")
+# print(chr(27) + "[2J")
 print("Creating new game.")
 
 inGame = 1
 availableCommands = commands.creatingGame
-command = raw_input("Enter number of players between 2 and 4: ")
+command = input("Enter number of players between 2 and 4: ")
 
 valid = 0
 while valid == 0:
     try:
         command = int(command)
         if command < 0:
-            command = raw_input("That doesn't even make sense. Please enter a number of players that makes sense: ")
+            command = input("That doesn't even make sense. Please enter a number of players that makes sense: ")
         elif command < 2:
-            command = raw_input("Please find a friend. Enter number of players when you've found one: ")
+            command = input("Please find a friend. Enter number of players when you've found one: ")
         elif command > 4:
-            command = raw_input("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
+            command = input("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
         else:
             valid = 1
     except:
         if command == "exit":
-            print("Thanks for trying. Exiting Console Catan.")
-            time.sleep(1.5)
-            print(chr(27) + "[2J")
-            sys.exit()
+            exit()
         if command == "help":
-            command = raw_input("Available commands: exit. Enter number of players between 2 and 4: ")
+            command = input("Available commands: exit. Enter number of players between 2 and 4: ")
         else:
-            command = raw_input("Enter " + bcolors.UNDERLINE +"number" + bcolors.ENDC + " of players between 2 and 4: ")
+            command = input("Enter " + bcolors.UNDERLINE +"number" + bcolors.ENDC + " of players between 2 and 4: ")
 
 numberOfPlayers = command
 
 print("Creating players.\n")
 for item in range(numberOfPlayers):
     name = 0
-    command = raw_input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
+    command = input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
     while name == 0:
         if command == "help" or command == "exit":
-            command = raw_input("That word is reserved. Please try a different name: ")
+            command = input("That word is reserved. Please try a different name: ")
         else: 
             name = command
     availableCommands = commands.choosingColor
@@ -452,7 +498,7 @@ for item in range(numberOfPlayers):
     print("Please enter a color [ ", end="")
     for canChoose in commands.choosingColor:
         print(canChoose + " ", end="") 
-    command = raw_input("]: ")
+    command = input("]: ")
     while color == 0:
         checkCommand(command)
         print(command)
@@ -475,19 +521,22 @@ for item in range(numberOfPlayers):
     
 print("Beginning game.")
     
+for currentPlayer in players:
+    print(currentPlayer.name + ", it is your turn.\n")
+    print("Cards: " + currentPlayer.getCards())
+    print("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
+command = input("Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
-# command = raw_input("Player: " + "" + ". Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
-
-# # user selected "build"
-# if (command == "b"):
-#     commandTwo = raw_input("(Building) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
-# # user selected "trade"
-# elif (command == "t"):
-#     commandTwo = raw_input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
-#     # user selected to trade with play
-#     if (commandTwo == "p"):
-#         commandThree = raw_input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+# user selected "build"
+if (command == "b"):
+    commandTwo = input("(Building) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
+# user selected "trade"
+elif (command == "t"):
+    commandTwo = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
+    # user selected to trade with play
+    if (commandTwo == "p"):
+        commandThree = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
 
         
 # print("\nEntered: " + command)
