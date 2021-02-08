@@ -7,10 +7,20 @@ from os import system, name
 import math
 import sys
 import time
+import random
 
 class bcolors:
-    PLAYERBLUE = '\\e[0;94m'
-    OKBLUE = '\033[94m'
+    PLAYERBLUE = '\033[1;94m'
+    PLAYERRED = '\033[1;91m'
+    PLAYERYELLOW = '\033[1;93m'
+    PLAYERGREEN = '\033[1;92m'
+    PLAYERPURPLE = '\033[1;95m'
+
+
+    WATER = '\033[34m'
+    WATERSOLID = '\033[34m\033[0;104m'
+    
+    OKBLUE = '\033[34m'
     HEADER = '\033[95m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
@@ -20,9 +30,9 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 class commands:
-    start = ['start', 'exit']
+    start = ['start', 'load', 'exit']
     creatingGame = ['exit']
-    choosingColor = ['blue', 'green', 'red', 'yellow', 'exit']
+    choosingColor = ['blue', 'green', 'red', 'yellow', 'purple', 'exit']
 
 class _GetchUnix:
     def __init__(self):
@@ -132,7 +142,7 @@ class pointGrid():
                 toReturn += "\n"
             for x in range(width):
                 if (points[y][x].water == 1):
-                    color = bcolors.OKBLUE
+                    color = bcolors.WATER
                 else:
                     color = bcolors.ENDC
                 
@@ -142,6 +152,7 @@ class pointGrid():
                     toPrint = chr(9608).encode('utf-8')
                 # if empty or resource type
                 elif (points[y][x].pointType == 0):
+                    # print resource type
                     toPrint = " "
                 # if empty type
                 elif (points[y][x].pointType == 5):
@@ -152,13 +163,15 @@ class pointGrid():
                     if points[y][x].building != 0:
                         ownerColor = points[y][x].owner.color
                         if ownerColor == "red":
-                            color = bcolors.FAIL
+                            color = bcolors.PLAYERRED
                         elif ownerColor == "blue":
-                            color = bcolors.OKBLUE
+                            color = bcolors.PLAYERBLUE
                         elif ownerColor == "green":
-                            color = bcolors.OKGREEN
+                            color = bcolors.PLAYERGREEN
                         elif ownerColor == "yellow":
-                            color = bcolors.WARNING
+                            color = bcolors.PLAYERYELLOW
+                        elif ownerColor == "purple":
+                            color = bcolors.PLAYERPURPLE
                     # if road up type
                     if (points[y][x].pointType == 1):
                         toPrint = "/"
@@ -225,6 +238,14 @@ class player():
         self.roadCount = 15
         self.devCards = []
     
+    def __str__(self):
+        toReturn = ""
+        return toReturn
+    
+    def getCards(self):
+        return ('hay: ' + str(self.cards['hay']) + ', sheep: ' + str(self.cards['sheep']) + ', wood: ' + str(self.cards['wood']) + ', brick: ' + str(self.cards['brick']) + ', ore: ' + str(self.cards['ore']))
+
+
 def checkCommand(command):
     commandStack.append(command)
     if (command == "help"):
@@ -242,20 +263,14 @@ def checkCommand(command):
             valid = 0
             while valid == 0:
                 if command == "y":
-                    print("Thanks for playing. Exiting Console Catan.")
-                    time.sleep(1.5)
-                    print(chr(27) + "[2J")
-                    sys.exit()
+                    exit()
                 elif command == "n":
                     print("Your game probably just broke. Sorry.")
                     return 0
                 else:
                     command = input("Please enter y or n: ")
         else:
-            print("Thanks for playing. Exiting Console Catan.")
-            time.sleep(1.5)
-            print(chr(27) + "[2J")
-            sys.exit()
+            exit()
     else:
         validCommand = 0
         for item in iter(availableCommands):
@@ -284,6 +299,9 @@ def checkCards(command, player):
             return 1
     return 0
 
+def rollDice():
+    return random.randint(1, 6) + random.randint(1, 6)
+    
 def placeRoad(player):
     if player.roadCount < 1:   
         print("Not enough roads")
@@ -397,12 +415,23 @@ def clear():
     else: 
         _ = system('clear') 
 
+def exit(): 
+    print("Thanks for playing. Exiting Console Catan.")
+    time.sleep(1.5)
+    clear()
+    sys.exit()
+
 # points = pointGrid(29)
 # player = player(0, 'test', 'blue')
 # placeSettlement(player)
 # placeCity(player)
 
 # print(points)
+
+
+
+
+
 
 commandStack = []
 availableCommands = commands.start
@@ -421,8 +450,7 @@ print("Type help at any time to see your available commands.")
 # time.sleep(1.5)
 command = input("Type start to begin a new game: ")
 if command == "exit":
-
-
+    exit()
 
 points = pointGrid(29)
 
@@ -447,10 +475,7 @@ while valid == 0:
             valid = 1
     except:
         if command == "exit":
-            print("Thanks for trying. Exiting Console Catan.")
-            time.sleep(1.5)
-            print(chr(27) + "[2J")
-            sys.exit()
+            exit()
         if command == "help":
             command = input("Available commands: exit. Enter number of players between 2 and 4: ")
         else:
@@ -497,8 +522,10 @@ print("Beginning game.")
     
 for currentPlayer in players:
     print(currentPlayer.name + ", it is your turn.\n")
+    print("Cards: " + currentPlayer.getCards())
+    print("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
-command = input("Player: " + "" + ". Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
+command = input("Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0. Dev Cards: none.\n" + "Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
 # user selected "build"
 if (command == "b"):
