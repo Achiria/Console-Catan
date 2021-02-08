@@ -33,6 +33,7 @@ class commands:
     start = ['start', 'load', 'exit']
     creatingGame = ['exit']
     choosingColor = ['blue', 'green', 'red', 'yellow', 'purple', 'exit']
+    startOfTurn = ['roll', 'play']
 
 class _GetchUnix:
     def __init__(self):
