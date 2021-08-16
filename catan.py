@@ -380,45 +380,66 @@ def checkCards(command, player):
         if player.cards.get('hay') > 1 and player.cards.get('sheep') > 1 and player.cards.get('ore') > 1:
             return 1
     return 0
+
+def addCards(deck, toAdd):
+    for k in toAdd.keys():
+        deck[k] = deck[k] + toAdd[k]
+    return deck
+
     
 def getResources(coord, points, roll=0):
     resources = []
     # left side
     if points.getPoint(coord.x+1, coord.y).pointType == 2:
-        resource = points.getPoint(coord.x+1, coord.y+1).resource
-        if resource != "":
-            resources.append(resource)
-        resource = points.getPoint(coord.x+1, coord.y-1).resource
-        if resource != "":
-            resources.append(resource)
-        resource = points.getPoint(coord.x-3, coord.y).resource
-        if resource != "":
-            resources.append(resource)
+        point = points.getPoint(coord.x+1, coord.y+1)
+        if point.resource != "" and (point.number == roll or roll == 0):
+            resources.append(point.resource)
+        point = points.getPoint(coord.x+1, coord.y-1)
+        if point.resource != "" and (point.number == roll or roll == 0):
+            resources.append(point.resource)
+        point = points.getPoint(coord.x-3, coord.y)
+        if point.resource != ""and (point.number == roll or roll == 0):
+            resources.append(point.resource)
     # right side
     if points.getPoint(coord.x+1, coord.y).pointType == 1:
-        resource = points.getPoint(coord.x+3, coord.y).resource
-        if resource != "":
-            resources.append(resource)
-        resource = points.getPoint(coord.x-1, coord.y-1).resource
-        if resource != "":
-            resources.append(resource)
-        resource = points.getPoint(coord.x-1, coord.y+1).resource
-        if resource != "":
-            resources.append(resource)
+        point = points.getPoint(coord.x+3, coord.y)
+        if point.resource != ""and (point.number == roll or roll == 0):
+            resources.append(point.resource)
+        point = points.getPoint(coord.x-1, coord.y-1)
+        if point.resource != ""and (point.number == roll or roll == 0):
+            resources.append(point.resource)
+        point = points.getPoint(coord.x-1, coord.y+1)
+        if point.resource != ""and (point.number == roll or roll == 0):
+            resources.append(point.resource)
     
     toReturn = {'hay': 0, 'sheep': 0, 'wood': 0, 'brick': 0, 'ore': 0}
+    toAdd = 1 
+    if points.getPoint(coord.x, coord.y).building == 2:
+        toAdd = 2
     for i in resources: 
         if i == "h":
-            toReturn['hay'] += 1
+            toReturn['hay'] += toAdd
         if i == "w":
-            toReturn['wood'] += 1
+            toReturn['wood'] += toAdd
         if i == "o":
-            toReturn['ore'] += 1
+            toReturn['ore'] += toAdd
         if i == "s":
-            toReturn['sheep'] += 1
+            toReturn['sheep'] += toAdd
         if i == "b":
-            toReturn['brick'] += 1
+            toReturn['brick'] += toAdd
     return toReturn
+
+def giveAllResources(points, roll):
+    for item in range(numberOfPlayers):
+        player = players[item]
+        toAdd = {'hay': 0, 'sheep': 0, 'wood': 0, 'brick': 0, 'ore': 0}
+        for settlement in player.settlements:
+            cards = getResources(settlement, points, roll)
+            toAdd = addCards(toAdd, cards)
+        for city in player.cities:
+            cards = getResources(city.coord, points, roll)
+            toAdd = addCards(toAdd, cards)
+        player.cards = addCards(player.cards, toAdd)
 
 def rollDice():
     return random.randint(1, 6) + random.randint(1, 6)
@@ -490,6 +511,7 @@ def placeSettlement(player, free):
                         cursorPosition.building = 1
                         cursorPosition.owner = player
                         player.settlementCount -= 1
+                        player.settlements.append(cursorPosition)
                         placed = 1
                         cursorPosition.active = 0
 
@@ -532,6 +554,8 @@ def placeCity(player):
                             cursorPosition.building = 2
                             player.settlementCount += 1
                             player.cityCount -= 1
+                            player.settlements.remove(cursorPosition)
+                            player.cities.append(cursorPosition)
                             placed = 1
                             cursorPosition.active = 0
                             return 1
@@ -637,14 +661,15 @@ for item in range(numberOfPlayers):
 print(chr(27) + "[2J")
 print("Creating new game.")
 print("Placing Settlements and Roads\n")
-for item in range(numberOfPlayers):
-    player = players[item]
-    print(player.color)
-    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-    placeSettlement(player, True)
-    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
-    placeRoad(player)
-    print(points)
+
+# for item in range(numberOfPlayers):
+#     player = players[item]
+#     print(player.color)
+#     print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+#     placeSettlement(player, True)
+#     print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+#     placeRoad(player)
+#     print(points)
 
 for item in range(numberOfPlayers):
     player = players[item]
@@ -678,7 +703,7 @@ while True:
         roll = rollDice()
         print("Roll: " + str(roll))
         
-    # giveCards(currentPlayer, roll)
+    giveAllResources(points, roll)
     print("Cards: " + currentPlayer.getCards())
     command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
