@@ -16,11 +16,11 @@ class bcolors:
     PLAYERGREEN = '\033[1;92m'
     PLAYERPURPLE = '\033[1;95m'
 
-    # SHEEP = 
-    # HAY = 
-    # WOOD = 
-    # BRICK = 
-    # ORE = 
+    SHEEP = '\u001b[38;5;10m'
+    HAY = '\u001b[38;5;11m'
+    WOOD = '\u001b[38;5;64m'
+    BRICK = '\u001b[38;5;160m'
+    ORE = '\u001b[38;5;15m'
 
     WATER = '\033[34m'
     WATERSOLID = '\033[34m\033[0;104m'
@@ -106,6 +106,8 @@ class pointGrid():
         pointTypePattern = deque([3, 4, 2, 4, 1, 0, 5, 0])
         numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12]
         resources = ["s", "s", "s", "s", "h", "h", "h", "h", "w", "w", "w", "w", "b", "b", "b", "o", "o", "o"]
+        random.shuffle(numbers)
+        random.shuffle(resources)
 
         points = []
         for y in range(height+1):
@@ -177,6 +179,17 @@ class pointGrid():
                     # print empty or first numeral of large number
                     toPrint = " "
                     if points[y][x+1].pointType == 5 and points[y][x+1].number > 9:
+                        resourceType = points[y][x+1].resource
+                        if resourceType == "s":
+                            color = bcolors.SHEEP
+                        if resourceType == "w":
+                            color = bcolors.WOOD
+                        if resourceType == "h":
+                            color = bcolors.HAY
+                        if resourceType == "o":
+                            color = bcolors.ORE
+                        if resourceType == "b":
+                            color = bcolors.BRICK
                         toPrint = "1"
                 # if resource type
                 elif (points[y][x].pointType == 5):
@@ -188,6 +201,17 @@ class pointGrid():
                             toPrint = str(points[y][x].number - 10)
                         else:
                             toPrint = str(points[y][x].number)
+                        resourceType = points[y][x].resource
+                        if resourceType == "s":
+                            color = bcolors.SHEEP
+                        if resourceType == "w":
+                            color = bcolors.WOOD
+                        if resourceType == "h":
+                            color = bcolors.HAY
+                        if resourceType == "o":
+                            color = bcolors.ORE
+                        if resourceType == "b":
+                            color = bcolors.BRICK
                 # if building or any road type
                 else:
                     # if any building present get owner color
@@ -372,7 +396,7 @@ def getResources(coord, points, roll=0):
             resources.append(resource)
     # right side
     if points.getPoint(coord.x+1, coord.y).pointType == 1:
-        resource = points.getPoint(coord.x+2, coord.y).resource
+        resource = points.getPoint(coord.x+3, coord.y).resource
         if resource != "":
             resources.append(resource)
         resource = points.getPoint(coord.x-1, coord.y-1).resource
@@ -644,14 +668,18 @@ while True:
     # for currentPlayer in players:
     print(currentPlayer.name + ", it is your turn.\n")
     print("Cards: " + currentPlayer.getCards())
-    command = input("Commands: (p)lay dev card, (r)oll")
+    command = input("Commands: (p)lay dev card, (r)oll: ")
 
+    roll = 0
     if command == "p":
         print("Dev cards: " + currentPlayer.getDevCards())
         command = input("")
     if command == "r":
-        print("Roll: " + str(rollDice()))
+        roll = rollDice()
+        print("Roll: " + str(roll))
         
+    # giveCards(currentPlayer, roll)
+    print("Cards: " + currentPlayer.getCards())
     command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
     # command = input("Cards \
