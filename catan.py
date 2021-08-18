@@ -286,7 +286,7 @@ class player():
         self.number = number
         self.name = name
         self.color = color
-        self.cards = {'hay': 0, 'sheep': 0, 'wood': 0, 'brick': 0, 'ore': 0}
+        self.cards = {'hay': 2, 'sheep': 2, 'wood': 2, 'brick': 2, 'ore': 2}
         self.points = 0
         self.settlementCount = 5
         self.cityCount = 4
@@ -302,6 +302,16 @@ class player():
     
     def getCards(self):
         return ('hay: ' + str(self.cards['hay']) + ', sheep: ' + str(self.cards['sheep']) + ', wood: ' + str(self.cards['wood']) + ', brick: ' + str(self.cards['brick']) + ', ore: ' + str(self.cards['ore']))
+
+    def hasCards(self, toBuy):
+        if toBuy == "settlement":
+            return self.cards['hay'] >= 1 and self.cards['sheep'] >= 1 and self.cards['wood'] >= 1 and self.cards['brick'] >= 1
+        if toBuy == "city":
+            return self.cards['hay'] >= 2 and self.cards['ore'] >= 3
+        if toBuy == "road":
+            return self.cards['wood'] >= 1 and self.cards['brick'] >=1
+        if toBuy == "dev":
+            return self.cards['hay'] >= 1 and self.cards['sheep'] >= 1 and self.cards['ore'] >= 1
 
     def getDevCards(self):
         toReturn = ""
@@ -437,7 +447,7 @@ def giveAllResources(points, roll):
             cards = getResources(settlement, points, roll)
             toAdd = addCards(toAdd, cards)
         for city in player.cities:
-            cards = getResources(city.coord, points, roll)
+            cards = getResources(city, points, roll)
             toAdd = addCards(toAdd, cards)
         player.cards = addCards(player.cards, toAdd)
 
@@ -686,24 +696,24 @@ for item in range(numberOfPlayers):
 print("Beginning game.")
 
 currentPlayerIndex = 0
+currentPlayer = players[currentPlayerIndex]
+
+# for currentPlayer in players:
+print(currentPlayer.name + ", it is your turn.\n")
+print("Cards: " + currentPlayer.getCards())
+command = input("Commands: (p)lay dev card, (r)oll: ")
+
+roll = 0
+if command == "p":
+    print("Dev cards: " + currentPlayer.getDevCards())
+    command = input("")
+if command == "r":
+    roll = rollDice()
+    print("Roll: " + str(roll))
+    
+giveAllResources(points, roll)
 
 while True: 
-    currentPlayer = players[currentPlayerIndex]
-
-    # for currentPlayer in players:
-    print(currentPlayer.name + ", it is your turn.\n")
-    print("Cards: " + currentPlayer.getCards())
-    command = input("Commands: (p)lay dev card, (r)oll: ")
-
-    roll = 0
-    if command == "p":
-        print("Dev cards: " + currentPlayer.getDevCards())
-        command = input("")
-    if command == "r":
-        roll = rollDice()
-        print("Roll: " + str(roll))
-        
-    giveAllResources(points, roll)
     print("Cards: " + currentPlayer.getCards())
     command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
@@ -718,21 +728,45 @@ while True:
 
     # user selected "build"
     if (command == "b"):
-        commandTwo = input("(Building) Cards: " + str(player.cards) + ".\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
-        if commandTwo == "s":
-            print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-            placeSettlement(player, False)
-        # if commandTwo == "c":
+        command = input("(Building) Cards: " + str(currentPlayer.getCards()) + ".\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
+        if command == "s":
+            if player.hasCards("settlement"):
+                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+                placeSettlement(currentPlayer, False)
+            else:
+                print("Not enough cards")
+        if command == "c":
+            if player.hasCards("city"):
+                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlemcityent.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+                placeCity(currentPlayer, False)
+            else:
+                print("Not enough cards")
         # if commandTwo == "r":
         # if commandTwo == "e":
     # user selected "trade"
     elif (command == "t"):
-        commandTwo = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
+        command = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
     # user selected to trade with play
-    if (commandTwo == "p"):
-        commandThree = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+    if (command == "p"):
+        command = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
 
     if command == "e":
         currentPlayerIndex += 1
+        currentPlayer = players[currentPlayerIndex % numberOfPlayers]
+
+        # for currentPlayer in players:
+        print(currentPlayer.name + ", it is your turn.\n")
+        print("Cards: " + currentPlayer.getCards())
+        command = input("Commands: (p)lay dev card, (r)oll: ")
+
+        roll = 0
+        if command == "p":
+            print("Dev cards: " + currentPlayer.getDevCards())
+            command = input("")
+        if command == "r":
+            roll = rollDice()
+            print("Roll: " + str(roll))
+            
+        giveAllResources(points, roll)
 
 # print("\nEntered: " + command)
