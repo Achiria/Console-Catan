@@ -66,13 +66,15 @@ class coord(object):
     # @param water     0 if coordinate is on land, 1 if in water
     # @param pointType 0 if none, 1 if road up type, 2 if road flat type, 3 if road down type, 4 if building type, 5 if resource type
     # @param building  0 if no building, 1 if road or settlement, 2 if city
+    # @param portType  0 if not a port, 
     # @param owner     the ID of the player who owns the building if any
-    def __init__(self, x, y, water, pointType, resource="", number=0, building=0, owner=None):
+    def __init__(self, x, y, water, pointType, resource="", number=0, building=0, portType=0, owner=None):
         self.x = x
         self.y = y
         self.water = water
         self.pointType = pointType
         self.building = building
+        self.portType = portType
         self.owner = owner
         self.active = 0
         self.resource = resource
@@ -106,8 +108,10 @@ class pointGrid():
         pointTypePattern = deque([3, 4, 2, 4, 1, 0, 5, 0])
         numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12]
         resources = ["s", "s", "s", "s", "h", "h", "h", "h", "w", "w", "w", "w", "b", "b", "b", "o", "o", "o"]
+        ports = ["s", "h", "w", "b", "o", "?", "?", "?", "?"]
         random.shuffle(numbers)
         random.shuffle(resources)
+        random.shuffle(ports)
 
         points = []
         for y in range(height+1):
@@ -116,6 +120,7 @@ class pointGrid():
             for x in range(width):
                 water = 0
                 pointType = pointTypePattern[x%8]   
+                portType = 0
                 number = 0
                 resource = ""
 
@@ -139,16 +144,19 @@ class pointGrid():
                     if (x < 4 or x > 24):
                         water = 1
 
-                # Assign resource and number
+                # assign port type
+                if pointType == 5 and water == 1:
+                    pass
+
+                # assign resource and number
                 if pointType == 5 and water == 0:
-                    # TODO randomize arrays before popping
                     number = numbers.pop()
                     if number == 7:
                         resource = ""
                     else: 
                         resource = resources.pop()
                     
-                point = coord(x, y, water, pointType, resource, number)
+                point = coord(x, y, water, pointType, resource, number, portType)
                 points[y].append(point)
         self.width = width
         self.height = height
@@ -451,15 +459,23 @@ def giveAllResources(points, roll):
             toAdd = addCards(toAdd, cards)
         player.cards = addCards(player.cards, toAdd)
 
+def giveManyResources():
+    for player in players:
+        toAdd = {'hay': 10, 'sheep': 10, 'wood': 10, 'brick': 10, 'ore': 10}
+        player.cards = addCards(player.cards, toAdd)
+
 def rollDice():
     return random.randint(1, 6) + random.randint(1, 6)
     
-def placeRoad(player):
+def placeRoad(player, free):
     if player.roadCount < 1:   
         print("Not enough roads")
         return 0
+    if not free and (player.cards.get("brick") < 1 or player.cards.get("wood") < 1):
+        print("Not enough cards.")
+        return 0
 
-    cursorPosition = points.getPoint(0, 0)
+    cursorPosition = points.getPoint(int(math.floor(points.width/2)), int(math.floor(points.height / 2)))
     cursorPosition.active = 1
     
     placed = 0
@@ -481,22 +497,28 @@ def placeRoad(player):
             if cursorPosition.water == 0:
                 if cursorPosition.pointType == 1 or cursorPosition.pointType == 2 or cursorPosition.pointType == 3:
                     if cursorPosition.building == 0:
-                        cursorPosition.building = 1
-                        cursorPosition.owner = player
-                        player.roadCount -= 1
-                        placed = 1
-                        cursorPosition.active = 0
-                        return 1
+                        if checkRoadAdjacency():
+                            cursorPosition.building = 1
+                            cursorPosition.owner = player
+                            player.roadCount -= 1
+                            placed = 1
+                            cursorPosition.active = 0
+                            
+                            if not free:
+                                player.cards["brick"] = player.cards.get("brick") - 1
+                                player.cards["wood"] = player.cards.get("wood") - 1
+
+                            return 1
 
 def placeSettlement(player, free):
     if player.settlementCount < 1:
         print("Not enough settlements.")
         return 0
-    if not free and (player.cards.get("hay") < 1 or player.cards.get("wood") < 1 or player.cards.get("brick") or player.cards.get("sheep") < 1):
+    if not free and (player.cards.get("hay") < 1 or player.cards.get("wood") < 1 or player.cards.get("brick") < 1 or player.cards.get("sheep") < 1):
         print("Not enough cards.")
         return 0
 
-    cursorPosition = points.getPoint(0, 0)
+    cursorPosition = points.getPoint(int(math.floor(points.width/2)), int(math.floor(points.height / 2)))
     cursorPosition.active = 1
     
     placed = 0
@@ -520,6 +542,7 @@ def placeSettlement(player, free):
                     if cursorPosition.building == 0:
                         cursorPosition.building = 1
                         cursorPosition.owner = player
+                        player.points += 1
                         player.settlementCount -= 1
                         player.settlements.append(cursorPosition)
                         placed = 1
@@ -534,12 +557,15 @@ def placeSettlement(player, free):
                         return cursorPosition
         # print(ord(typed))
 
-def placeCity(player):
+def placeCity(player, free):
     if player.cityCount < 1:   
         print("Not enough cities.")
         return 0
+    if not free and (player.cards.get("ore") < 2 or player.cards.get("hay") < 3):
+        print("Not enough cards.")
+        return 0
 
-    cursorPosition = points.getPoint(0, 0)
+    cursorPosition = points.getPoint(int(math.floor(points.width/2)), int(math.floor(points.height / 2)))
     cursorPosition.active = 1
     
     placed = 0
@@ -562,14 +588,58 @@ def placeCity(player):
                     if cursorPosition.building == 1:
                         if cursorPosition.owner == player.number:
                             cursorPosition.building = 2
+                            player.points += 1
                             player.settlementCount += 1
                             player.cityCount -= 1
                             player.settlements.remove(cursorPosition)
                             player.cities.append(cursorPosition)
                             placed = 1
                             cursorPosition.active = 0
+
+                            if not free:
+                                player.cards["ore"] = player.cards.get("ore") - 2
+                                player.cards["hay"] = player.cards.get("hay") - 3
+
                             return 1
         # print(ord(typed))
+
+def selectPort(player):
+    selected = False
+    while not selected:
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')  
+        elif ord(typed) == 13:
+            if cursorPosition.water == 0:
+                if cursorPosition.pointType == 4:
+                    if cursorPosition.building == 1:
+                        if cursorPosition.owner == player.number:
+                            cursorPosition.building = 2
+                            player.points += 1
+                            player.settlementCount += 1
+                            player.cityCount -= 1
+                            player.settlements.remove(cursorPosition)
+                            player.cities.append(cursorPosition)
+                            placed = 1
+                            cursorPosition.active = 0
+
+                            if not free:
+                                player.cards["ore"] = player.cards.get("ore") - 2
+                                player.cards["hay"] = player.cards.get("hay") - 3
+
+                            return 1
+
+
+def checkRoadAdjacency():
+    return True
 
 def clear(): 
     # for windows 
@@ -690,7 +760,7 @@ for item in range(numberOfPlayers):
     cards = getResources(position, points)
     player.cards = cards
     print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your second road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
-    placeRoad(player)
+    placeRoad(player, True)
     print(points)
     
 print("Beginning game.")
@@ -699,7 +769,8 @@ currentPlayerIndex = 0
 currentPlayer = players[currentPlayerIndex]
 
 # for currentPlayer in players:
-print(currentPlayer.name + ", it is your turn.\n")
+print("\n" + currentPlayer.name + ", it is your turn.\n")
+print("Points: " + str(currentPlayer.points))
 print("Cards: " + currentPlayer.getCards())
 command = input("Commands: (p)lay dev card, (r)oll: ")
 
@@ -713,7 +784,11 @@ if command == "r":
     
 giveAllResources(points, roll)
 
+# testing
+giveManyResources()
+
 while True: 
+    print(points)
     print("Cards: " + currentPlayer.getCards())
     command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
@@ -737,20 +812,45 @@ while True:
                 print("Not enough cards")
         if command == "c":
             if player.hasCards("city"):
-                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your settlemcityent.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your city.\nUse arrow keys or wasd to move the cursor. Press enter to place city.")
                 placeCity(currentPlayer, False)
             else:
                 print("Not enough cards")
+        if command == "r":
+            if player.hasCards("road"):
+                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+                placeRoad(currentPlayer, False)
+            else:
+                print("Not enough cards")
         # if commandTwo == "r":
-        # if commandTwo == "e":
+        if command == "e":
+            command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
     # user selected "trade"
     elif (command == "t"):
         command = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
-    # user selected to trade with play
-    if (command == "p"):
-        command = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+        # user selected to trade with play
+        if (command == "p"):
+            command = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+            if (command == "l"):
+                print("Player names: ")
+                for p in players:
+                    print(p.name + " ")
+            if (command == "e"):
+                pass
+            for p in players:
+                if (command == p.name):
+                    command = input("(Trade>Player>" + command + ") Cards (...).\nEnter card to trade: ")
+
+            
+        if (command == "t"):
+            # check for port adjacency
+            pass
 
     if command == "e":
+        if currentPlayer.points >= 10:
+            print(currentPlayer.name + " has won the game!")
+            exit
+
         currentPlayerIndex += 1
         currentPlayer = players[currentPlayerIndex % numberOfPlayers]
 
@@ -768,5 +868,6 @@ while True:
             print("Roll: " + str(roll))
             
         giveAllResources(points, roll)
+
 
 # print("\nEntered: " + command)
