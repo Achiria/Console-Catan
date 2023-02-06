@@ -66,9 +66,9 @@ class coord(object):
     # @param water     0 if coordinate is on land, 1 if in water
     # @param pointType 0 if none, 1 if road up type, 2 if road flat type, 3 if road down type, 4 if building type, 5 if resource type
     # @param building  0 if no building, 1 if road or settlement, 2 if city
-    # @param portType  0 if not a port, 
+    # @param portType  "" if not a port, 
     # @param owner     the ID of the player who owns the building if any
-    def __init__(self, x, y, water, pointType, resource="", number=0, building=0, portType=0, owner=None):
+    def __init__(self, x, y, water, pointType, resource="", number=0, building=0, portType="", owner=None):
         self.x = x
         self.y = y
         self.water = water
@@ -113,6 +113,9 @@ class pointGrid():
         random.shuffle(resources)
         random.shuffle(ports)
 
+        #TODO make this programmatically
+        portCoords = [(10,2), (18,2), (2,4), (26,4), (2,8), (26,8), (6,11), (22,11), (14,13)]
+
         points = []
         for y in range(height+1):
             pointTypePattern.rotate(4)
@@ -120,7 +123,8 @@ class pointGrid():
             for x in range(width):
                 water = 0
                 pointType = pointTypePattern[x%8]   
-                portType = 0
+                buildingType = 0
+                portType = ""
                 number = 0
                 resource = ""
 
@@ -146,7 +150,8 @@ class pointGrid():
 
                 # assign port type
                 if pointType == 5 and water == 1:
-                    pass
+                    if (x, y) in portCoords:
+                        portType = ports.pop()
 
                 # assign resource and number
                 if pointType == 5 and water == 0:
@@ -156,7 +161,7 @@ class pointGrid():
                     else: 
                         resource = resources.pop()
                     
-                point = coord(x, y, water, pointType, resource, number, portType)
+                point = coord(x, y, water, pointType, resource, number, buildingType, portType)
                 points[y].append(point)
         self.width = width
         self.height = height
@@ -202,7 +207,10 @@ class pointGrid():
                 # if resource type
                 elif (points[y][x].pointType == 5):
                     if points[y][x].water == 1:
-                        toPrint = " "
+                        if points[y][x].portType != "":
+                            toPrint = points[y][x].portType
+                        else:
+                            toPrint = " "
                     else:
                         # print second numeral
                         if points[y][x].number > 9:
@@ -256,7 +264,7 @@ class pointGrid():
                         # if city
                         elif (points[y][x].building == 2):
                             # toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
-                            toPrint = "∆".encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
+                            toPrint = "∆".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
                 try:
                     toAdd = color + toPrint.decode('utf-8') + bcolors.ENDC
                 except (UnicodeDecodeError, AttributeError):
@@ -586,7 +594,7 @@ def placeCity(player, free):
             if cursorPosition.water == 0:
                 if cursorPosition.pointType == 4:
                     if cursorPosition.building == 1:
-                        if cursorPosition.owner == player.number:
+                        if cursorPosition.owner == player:
                             cursorPosition.building = 2
                             player.points += 1
                             player.settlementCount += 1
@@ -618,24 +626,12 @@ def selectPort(player):
         elif typed == 'd' or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
-            if cursorPosition.water == 0:
-                if cursorPosition.pointType == 4:
-                    if cursorPosition.building == 1:
-                        if cursorPosition.owner == player.number:
-                            cursorPosition.building = 2
-                            player.points += 1
-                            player.settlementCount += 1
-                            player.cityCount -= 1
-                            player.settlements.remove(cursorPosition)
-                            player.cities.append(cursorPosition)
-                            placed = 1
-                            cursorPosition.active = 0
+            # if is port
+                # selected = True
+                # cursorPosition.active = 0
 
-                            if not free:
-                                player.cards["ore"] = player.cards.get("ore") - 2
-                                player.cards["hay"] = player.cards.get("hay") - 3
-
-                            return 1
+                # return 1
+            return
 
 
 def checkRoadAdjacency():
@@ -725,17 +721,17 @@ for item in range(numberOfPlayers):
         else: 
             name = command
     availableCommands = commands.choosingColor
-    color = 0
+    color = ""
     print("Please enter a color [ ", end="")
     for canChoose in commands.choosingColor:
         print(canChoose + " ", end="") 
     command = input("]: ")
-    while color == 0:
-        checkCommand(command)
-        print(command)
-        commands.choosingColor.remove(command)
-        color = command
-    print(item)
+    while color == "":
+        if checkCommand(command):
+            # print(command)
+            commands.choosingColor.remove(command)
+            color = command
+    # print(item)
     players.append(player(item, name, color))
 
 print(chr(27) + "[2J")
@@ -772,15 +768,21 @@ currentPlayer = players[currentPlayerIndex]
 print("\n" + currentPlayer.name + ", it is your turn.\n")
 print("Points: " + str(currentPlayer.points))
 print("Cards: " + currentPlayer.getCards())
-command = input("Commands: (p)lay dev card, (r)oll: ")
-
-roll = 0
-if command == "p":
-    print("Dev cards: " + currentPlayer.getDevCards())
-    command = input("")
-if command == "r":
-    roll = rollDice()
-    print("Roll: " + str(roll))
+nextAction = ""
+while nextAction == "":
+    command = input("Commands: (p)lay dev card, (r)oll: ")
+    roll = 0
+    if command == "p":
+        nextAction = command
+        print("Dev cards: " + currentPlayer.getDevCards())
+        command = input("")
+    elif command == "r":
+        nextAction = command
+        roll = rollDice()
+        print("Roll: " + str(roll))
+    else:
+        print("Command not recognized.")
+    
     
 giveAllResources(points, roll)
 
