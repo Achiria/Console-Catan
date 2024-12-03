@@ -260,7 +260,14 @@ class pointGrid():
                         # if settlement
                         elif (points[y][x].building == 1):                            
                             # toPrint = chr(5169).encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
-                            toPrint = "π".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                           
+
+                            if name == 'nt': 
+                                # this line only works on windows
+                                toPrint = "π".encode('utf-8') + bcolors.ENDC.encode('utf-8') + chr(818).encode('utf-8')
+                            else:
+                                #this line works on mac
+                                toPrint = "π".encode('utf-8') + bcolors.ENDC.encode('utf-8')
                         # if city
                         elif (points[y][x].building == 2):
                             # toPrint = chr(5169).encode('utf-8') + chr(831).encode('utf-8') + bcolors.ENDC + chr(818).encode('utf-8')
@@ -712,13 +719,13 @@ numberOfPlayers = command
 
 print("Creating players.\n")
 for item in range(numberOfPlayers):
-    name = 0
+    chosenName = 0
     command = input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
-    while name == 0:
+    while chosenName == 0:
         if command == "help" or command == "exit":
             command = input("That word is reserved. Please try a different name: ")
         else: 
-            name = command
+            chosenName = command
     availableCommands = commands.choosingColor
     color = ""
     print("Please enter a color [ ", end="")
@@ -731,7 +738,7 @@ for item in range(numberOfPlayers):
             commands.choosingColor.remove(command)
             color = command
     # print(item)
-    players.append(player(item, name, color))
+    players.append(player(item, chosenName, color))
 
 print(chr(27) + "[2J")
 print("Creating new game.")
