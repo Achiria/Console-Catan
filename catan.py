@@ -8,6 +8,8 @@ import math
 import sys
 import time
 import random
+import curses
+from curses import wrapper
 
 class bcolors:
     PLAYERBLUE = '\033[1;94m'
@@ -296,6 +298,8 @@ class pointGrid():
         if direction == 'left':
             currentPosition = self.points[currentPosition.y][currentPosition.x-1]
         if direction == 'right':
+            if currentPosition.x == self.width - 1:
+                currentPosition = self.points[currentPosition.y][0]
             currentPosition = self.points[currentPosition.y][currentPosition.x+1]
         currentPosition.active = 1
         return currentPosition
@@ -512,18 +516,23 @@ def placeRoad(player, free):
             if cursorPosition.water == 0:
                 if cursorPosition.pointType == 1 or cursorPosition.pointType == 2 or cursorPosition.pointType == 3:
                     if cursorPosition.building == 0:
-                        if checkRoadAdjacency():
+                        if not free and checkRoadAdjacency(cursorPosition):
                             cursorPosition.building = 1
                             cursorPosition.owner = player
                             player.roadCount -= 1
                             placed = 1
                             cursorPosition.active = 0
                             
-                            if not free:
-                                player.cards["brick"] = player.cards.get("brick") - 1
-                                player.cards["wood"] = player.cards.get("wood") - 1
-
-                            return 1
+                            player.cards["brick"] = player.cards.get("brick") - 1
+                            player.cards["wood"] = player.cards.get("wood") - 1
+                        else: 
+                            cursorPosition.building = 1
+                            cursorPosition.owner = player
+                            player.roadCount -= 1
+                            placed = 1
+                            cursorPosition.active = 0
+                        
+                        return 1
 
 def placeSettlement(player, free):
     if player.settlementCount < 1:
@@ -542,31 +551,39 @@ def placeSettlement(player, free):
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
-        if typed == 'w' or ord(typed) == 65:
+        if typed == 'w' or typed == "k" or ord(typed) == 65:
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or ord(typed) == 66:
+        elif typed == 's' or typed == "j" or ord(typed) == 66:
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or ord(typed) == 68:
+        elif typed == 'a' or typed == "h" or ord(typed) == 68:
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or ord(typed) == 67:
+        elif typed == 'd' or typed == "l" or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
                 if cursorPosition.pointType == 4:
                     if cursorPosition.building == 0:
-                        cursorPosition.building = 1
-                        cursorPosition.owner = player
-                        player.points += 1
-                        player.settlementCount -= 1
-                        player.settlements.append(cursorPosition)
-                        placed = 1
-                        cursorPosition.active = 0
+                        if not free and checkRoadAdjacency(cursorPosition):
+                            cursorPosition.building = 1
+                            cursorPosition.owner = player
+                            player.points += 1
+                            player.settlementCount -= 1
+                            player.settlements.append(cursorPosition)
+                            placed = 1
+                            cursorPosition.active = 0
 
-                        if not free:
                             player.cards["hay"] = player.cards.get("hay") - 1
                             player.cards["wood"] = player.cards.get("wood") - 1
                             player.cards["brick"] = player.cards.get("brick") - 1
                             player.cards["sheep"] = player.cards.get("sheep") - 1
+                        else:
+                            cursorPosition.building = 1
+                            cursorPosition.owner = player
+                            player.points += 1
+                            player.settlementCount -= 1
+                            player.settlements.append(cursorPosition)
+                            placed = 1
+                            cursorPosition.active = 0
 
                         return cursorPosition
         clear()
@@ -640,7 +657,12 @@ def selectPort(player):
                 # return 1
             return
 
-def checkRoadAdjacency():
+def checkRoadAdjacency(cursorPosition):
+    if cursorPosition.buildingType == 0:
+        return False
+    return True
+
+def checkPlacementIsValid(cursorPosition):
     return True
 
 def clear(): 
@@ -674,216 +696,237 @@ players = []
 currentPlayer = None
 inGame = 0
 
-# clear()
-# print(chr(27) + "[2J")
-# print(bcolors.HEADER + chr(9608) + bcolors.ENDC)
-print(bcolors.HEADER + "Welcome to Console Catan!" + bcolors.ENDC)
-# time.sleep(1.5)
-print("Type help at any time to see your available commands.")
-# time.sleep(1.5)
 
-# command = input("Type start to begin a new game: ")
-# if command == "exit":
-#     exit()
+stdscr = curses.initscr()
 
-points = pointGrid(29)
-
-# print(chr(27) + "[2J")
-print("Creating new game.")
-
-inGame = 1
-availableCommands = commands.creatingGame
-command = input("Enter number of players between 2 and 4: ")
-
-valid = 0
-while valid == 0:
-    try:
-        command = int(command)
-        if command < 0:
-            command = input("That doesn't even make sense. Please enter a number of players that makes sense: ")
-        elif command < 2:
-            command = input("Please find a friend. Enter number of players when you've found one: ")
-        elif command > 4:
-            command = input("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
-        else:
-            valid = 1
-    except:
-        if command == "exit":
-            exit()
-        if command == "help":
-            command = input("Available commands: exit. Enter number of players between 2 and 4: ")
-        else:
-            command = input("Enter " + bcolors.UNDERLINE +"number" + bcolors.ENDC + " of players between 2 and 4: ")
-
-numberOfPlayers = command
-
-print("Creating players.\n")
-for item in range(numberOfPlayers):
-    chosenName = 0
-    command = input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
-    while chosenName == 0:
-        if command == "help" or command == "exit":
-            command = input("That word is reserved. Please try a different name: ")
-        else: 
-            chosenName = command
-    availableCommands = commands.choosingColor
-    color = ""
-    print("Please enter a color [ ", end="")
-    for canChoose in commands.choosingColor:
-        print(canChoose + " ", end="") 
-    command = input("]: ")
-    while color == "":
-        if checkCommand(command):
-            # print(command)
-            commands.choosingColor.remove(command)
-            color = command
-    # print(item)
-    players.append(player(item, chosenName, color))
-
-print(chr(27) + "[2J")
-print("Creating new game.")
-print("Placing Settlements and Roads\n")
-time.sleep(2)
-
-# Have players place their first settlement and road
-for item in range(numberOfPlayers):
-    player = players[item]
-    # print(player.color)
-    print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-    time.sleep(1)
-    placeSettlement(player, True)
-    print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
-    placeRoad(player, True)
-    print(points)
-
-# Have players place their second settlement and road
-for item in range(numberOfPlayers):
-    player = players[item]
-    # print(player.color)
-    print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your second settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-    position = placeSettlement(player, True)
-    # give cards
-    cards = getResources(position, points)
-    player.cards = cards
-    print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your second road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
-    placeRoad(player, True)
-    print(points)
+def main(stdscr):
+    curses.start_color()
+    stdscr.keypad(True)
+    curses.nocbreak()
+    stdscr.clear()
     
-print("Beginning game.")
-
-currentPlayerIndex = 0
-currentPlayer = players[currentPlayerIndex]
-
-# for currentPlayer in players:
-print("\n" + currentPlayer.name + ", it is your turn.\n")
-print("Points: " + str(currentPlayer.points))
-print("Cards: " + currentPlayer.getCards())
-nextAction = ""
-while nextAction == "":
-    command = input("Commands: (p)lay dev card, (r)oll: ")
-    roll = 0
-    if command == "p":
-        nextAction = command
-        print("Dev cards: " + currentPlayer.getDevCards())
-        command = input("")
-    elif command == "r":
-        nextAction = command
-        roll = rollDice()
-        print("Roll: " + str(roll))
-    else:
-        print("Command not recognized.")
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
     
-    
-giveAllResources(points, roll)
+    stdscr.addstr("Welcome to Console Catan!\n", curses.color_pair(1))
+    stdscr.addstr("Type help at any time to see your available commands.\n")
+    stdscr.addstr("Creating new game.\n")
+    stdscr.addstr("Enter number of players between 2 and 4: ")
 
-# testing
-giveManyResources()
+    points = pointGrid(29)
 
-while True: 
-    print(points)
-    print("Cards: " + currentPlayer.getCards())
-    command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
 
-    # command = input("Cards \
-    #     hay: " + currentPlayer.cards.get('hay') + " \n\
-    #     sheep: " + currentPlayer.cards.get('sheep') + " \n\
-    #     wood: " + currentPlayer.cards.get('wood') + " \n\
-    #     brick: " + currentPlayer.cards.get('brick') + " \n\
-    #     ore: " + currentPlayer.cards.get('ore') + " \n\
-    #     Dev Cards: " + getDevCards(currentPlayer) + " \n\
-    #     Commands (b)uild, (t)rade, buy (d)ev card, (p)lay dev card, (e)nd turn: ")
+    inGame = 1
+    availableCommands = commands.creatingGame
+    curses.echo()
+    command = stdscr.getkey()
 
-    # user selected "build"
-    if (command == "b"):
-        command = input("(Building) Cards: " + str(currentPlayer.getCards()) + ".\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
-        if command == "s":
-            if player.hasCards("settlement"):
-                print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(currentPlayer.name) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-                placeSettlement(currentPlayer, False)
+    valid = 0
+    while valid == 0:
+        try:
+            command = int(command)
+            if command < 0:
+                stdscr.addstr("That doesn't even make sense. Please enter a number of players that makes sense: ")
+                command = stdscr.getch()
+            elif command < 2:
+                stdscr.addstr("Please find a friend. Enter number of players when you've found one: ")
+                command = stdscr.getch()
+            elif command > 4:
+                stdscr.addstr("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
+                command = stdscr.getch()
             else:
-                print("Not enough cards")
-        if command == "c":
-            if player.hasCards("city"):
-                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your city.\nUse arrow keys or wasd to move the cursor. Press enter to place city.")
-                placeCity(currentPlayer, False)
+                valid = 1
+        except:
+            if command == "exit":
+                exit()
+            if command == "help":
+                stdscr.addstr("Available commands: exit. Enter number of players between 2 and 4: ")
+                command = stdscr.getch()
             else:
-                print("Not enough cards")
-        if command == "r":
-            if player.hasCards("road"):
-                print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
-                placeRoad(currentPlayer, False)
-            else:
-                print("Not enough cards")
-        # if commandTwo == "r":
-        if command == "e":
-            command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
-    # user selected "trade"
-    elif (command == "t"):
-        command = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
-        # user selected to trade with play
-        if (command == "p"):
-            command = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
-            if (command == "l"):
-                print("Player names: ")
-                for p in players:
-                    print(p.name + " ")
-            if (command == "e"):
-                pass
-            for p in players:
-                if (command == p.name):
-                    command = input("(Trade>Player>" + command + ") Cards (...).\nEnter card to trade: ")
+                stdscr.addstr("Enter " + bcolors.UNDERLINE + "number" + bcolors.ENDC + " of players between 2 and 4: ")
+                command = stdscr.getch()
 
-            
-        if (command == "t"):
-            # check for port adjacency
-            pass
+    numberOfPlayers = command
+
+    stdscr.clear()
+    stdscr.addstr("Creating players.\n")
+    for item in range(numberOfPlayers):
+        chosenName = 0
+        # command = input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
+        stdscr.addstr("Player " + str(item + 1), curses.color_pair(1))
+        stdscr.addstr("\nEnter your name: ")
+        command = stdscr.getch()
+        while chosenName == 0:
+            if command == "help" or command == "exit":
+                command = input("That word is reserved. Please try a different name: ")
+            else: 
+                chosenName = command
+        availableCommands = commands.choosingColor
+        color = ""
+        stdscr.addstr("Please enter a color [ ")
+        # print("Please enter a color [ ", end="")
+        for canChoose in commands.choosingColor:
+             stdscr.addstr(canChoose + " ") 
+        stdscr.addstr("]: ")
+        command = stdscr.getch()
+        while color == "":
+            if checkCommand(command):
+                # print(command)
+                commands.choosingColor.remove(command)
+                color = command
+        # print(item)
+        players.append(player(item, chosenName, color))
+
+    print(chr(27) + "[2J")
+    print("Creating new game.")
+    print("Placing Settlements and Roads\n")
+    time.sleep(2)
+
+    # Have players place their first settlement and road
+    for item in range(numberOfPlayers):
+        player = players[item]
+        # print(player.color)
+        print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+        time.sleep(1)
+        placeSettlement(player, True)
+        print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+        placeRoad(player, True)
+        print(points)
+
+    # Have players place their second settlement and road
+    for item in range(numberOfPlayers):
+        player = players[item]
+        # print(player.color)
+        print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your second settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+        position = placeSettlement(player, True)
+        # give cards
+        cards = getResources(position, points)
+        player.cards = cards
+        print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your second road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+        placeRoad(player, True)
+        print(points)
         
-    #TODO make this the default case of a switch? or necessary for the ending of a turn - not dependent upon input.
-        #while maxPoints < 10
-        #    ...
-        #    
-    if command == "e":
-        if currentPlayer.points >= 10:
-            print(currentPlayer.name + " has won the game!")
-            exit
+    print("Beginning game.")
 
-        currentPlayerIndex += 1
-        currentPlayer = players[currentPlayerIndex % numberOfPlayers]
+    currentPlayerIndex = 0
+    currentPlayer = players[currentPlayerIndex]
 
-        # for currentPlayer in players:
-        print(currentPlayer.name + ", it is your turn.\n")
-        print("Cards: " + currentPlayer.getCards())
+    # for currentPlayer in players:
+    print("\n" + currentPlayer.name + ", it is your turn.\n")
+    print("Points: " + str(currentPlayer.points))
+    print("Cards: " + currentPlayer.getCards())
+    nextAction = ""
+    while nextAction == "":
         command = input("Commands: (p)lay dev card, (r)oll: ")
-
         roll = 0
         if command == "p":
+            nextAction = command
             print("Dev cards: " + currentPlayer.getDevCards())
             command = input("")
-        if command == "r":
+        elif command == "r":
+            nextAction = command
             roll = rollDice()
             print("Roll: " + str(roll))
+        else:
+            print("Command not recognized.")
+        
+        
+    giveAllResources(points, roll)
+
+    # testing
+    giveManyResources()
+
+    while True: 
+        print(points)
+        print("Cards: " + currentPlayer.getCards())
+        command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
+
+        # command = input("Cards \
+        #     hay: " + currentPlayer.cards.get('hay') + " \n\
+        #     sheep: " + currentPlayer.cards.get('sheep') + " \n\
+        #     wood: " + currentPlayer.cards.get('wood') + " \n\
+        #     brick: " + currentPlayer.cards.get('brick') + " \n\
+        #     ore: " + currentPlayer.cards.get('ore') + " \n\
+        #     Dev Cards: " + getDevCards(currentPlayer) + " \n\
+        #     Commands (b)uild, (t)rade, buy (d)ev card, (p)lay dev card, (e)nd turn: ")
+
+        # user selected "build"
+        if (command == "b"):
+            command = input("(Building) Cards: " + str(currentPlayer.getCards()) + ".\nCommands: (s)ettlement, (c)ity, (r)oad, (e)xit: ")
+            if command == "s":
+                if player.hasCards("settlement"):
+                    print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(currentPlayer.name) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
+                    placeSettlement(currentPlayer, False)
+                else:
+                    print("Not enough cards")
+            if command == "c":
+                if player.hasCards("city"):
+                    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your city.\nUse arrow keys or wasd to move the cursor. Press enter to place city.")
+                    placeCity(currentPlayer, False)
+                else:
+                    print("Not enough cards")
+            if command == "r":
+                if player.hasCards("road"):
+                    print(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
+                    placeRoad(currentPlayer, False)
+                else:
+                    print("Not enough cards")
+            # if commandTwo == "r":
+            if command == "e":
+                command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
+        # user selected "trade"
+        elif (command == "t"):
+            command = input("(Trade) Trade with (p)layer or por(t) or (e)xit: ")
+            # user selected to trade with play
+            if (command == "p"):
+                command = input("(Trade>Player) Cards hay: 0, sheep: 0, wood: 0, brick: 0, ore: 0.\nEnter player to trade with, (l)ist players, or (e)xit: ")
+                if (command == "l"):
+                    print("Player names: ")
+                    for p in players:
+                        print(p.name + " ")
+                if (command == "e"):
+                    pass
+                for p in players:
+                    if (command == p.name):
+                        command = input("(Trade>Player>" + command + ") Cards (...).\nEnter card to trade: ")
+
+                
+            if (command == "t"):
+                # check for port adjacency
+                pass
             
-        giveAllResources(points, roll)
+        #TODO make this the default case of a switch? or necessary for the ending of a turn - not dependent upon input.
+            #while maxPoints < 10
+            #    ...
+            #    
+        if command == "e":
+            if currentPlayer.points >= 10:
+                print(currentPlayer.name + " has won the game!")
+                exit
+
+            currentPlayerIndex += 1
+            currentPlayer = players[currentPlayerIndex % numberOfPlayers]
+
+            # for currentPlayer in players:
+            print(currentPlayer.name + ", it is your turn.\n")
+            print("Cards: " + currentPlayer.getCards())
+            command = input("Commands: (p)lay dev card, (r)oll: ")
+
+            roll = 0
+            if command == "p":
+                print("Dev cards: " + currentPlayer.getDevCards())
+                command = input("")
+            if command == "r":
+                roll = rollDice()
+                print("Roll: " + str(roll))
+                
+            giveAllResources(points, roll)
 
 
-# print("\nEntered: " + command)
+    # print("\nEntered: " + command)
+
+wrapper(main)
+
+curses.nocbreak()
+stdscr.keypad(False)
+curses.echo()
+curses.endwin()
