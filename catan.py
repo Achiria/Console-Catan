@@ -701,8 +701,9 @@ stdscr = curses.initscr()
 
 def main(stdscr):
     curses.start_color()
-    stdscr.keypad(True)
     curses.nocbreak()
+    stdscr.keypad(True)
+    stdscr.nodelay(False)
     stdscr.clear()
     
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -720,41 +721,43 @@ def main(stdscr):
     curses.echo()
     command = stdscr.getkey()
 
-    valid = 0
-    while valid == 0:
-        try:
-            command = int(command)
-            if command < 0:
-                stdscr.addstr("That doesn't even make sense. Please enter a number of players that makes sense: ")
-                command = stdscr.getch()
-            elif command < 2:
-                stdscr.addstr("Please find a friend. Enter number of players when you've found one: ")
-                command = stdscr.getch()
-            elif command > 4:
-                stdscr.addstr("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
-                command = stdscr.getch()
-            else:
-                valid = 1
-        except:
-            if command == "exit":
-                exit()
-            if command == "help":
-                stdscr.addstr("Available commands: exit. Enter number of players between 2 and 4: ")
-                command = stdscr.getch()
-            else:
-                stdscr.addstr("Enter " + bcolors.UNDERLINE + "number" + bcolors.ENDC + " of players between 2 and 4: ")
-                command = stdscr.getch()
+    # valid = 0
+    # while valid == 0:
+    #     try:
+    #         command = int(command)
+    #         if command < 0:
+    #             stdscr.addstr("That doesn't even make sense. Please enter a number of players that makes sense: ")
+    #             command = stdscr.getkey()
+    #         elif command < 2:
+    #             stdscr.addstr("Please find a friend. Enter number of players when you've found one: ")
+    #             command = stdscr.getkey()
+    #         elif command > 4:
+    #             stdscr.addstr("Console Catan does not currently support more that 4 players.\nPlease enter a number of players 4 or fewer: ")
+    #             command = stdscr.getkey()
+    #         else:
+    #             valid = 1
+    #     except:
+    #         if command == "exit":
+    #             exit()
+    #         if command == "help":
+    #             stdscr.addstr("Available commands: exit. Enter number of players between 2 and 4: ")
+    #             command = stdscr.getch()
+    #         else:
+    #             stdscr.addstr("Enter " + bcolors.UNDERLINE + "number" + bcolors.ENDC + " of players between 2 and 4: ")
+    #             command = stdscr.getch()
 
-    numberOfPlayers = command
+    numberOfPlayers = int(command)
 
     stdscr.clear()
     stdscr.addstr("Creating players.\n")
     for item in range(numberOfPlayers):
-        chosenName = 0
         # command = input(bcolors.HEADER + "Player " + str(item + 1) + bcolors.ENDC + "\nEnter your name: ")
         stdscr.addstr("Player " + str(item + 1), curses.color_pair(1))
         stdscr.addstr("\nEnter your name: ")
-        command = stdscr.getch()
+        stdscr.nodelay(False)
+        stdscr.refresh()
+        command = stdscr.getstr()
+        chosenName = 0
         while chosenName == 0:
             if command == "help" or command == "exit":
                 command = input("That word is reserved. Please try a different name: ")
