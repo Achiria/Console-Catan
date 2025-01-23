@@ -419,7 +419,6 @@ def addCards(deck, toAdd):
         deck[k] = deck[k] + toAdd[k]
     return deck
 
-    
 def getResources(coord, points, roll=0):
     resources = []
     # left side
@@ -500,13 +499,13 @@ def placeRoad(player, free):
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
-        if typed == 'w' or ord(typed) == 65:
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -542,13 +541,13 @@ def placeSettlement(player, free):
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
-        if typed == 'w' or ord(typed) == 65:
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -589,13 +588,13 @@ def placeCity(player, free):
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
-        if typed == 'w' or ord(typed) == 65:
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -624,13 +623,13 @@ def selectPort(player):
         print(points)
         getch = _GetchUnix()
         typed = getch.__call__()
-        if typed == 'w' or ord(typed) == 65:
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             # if is port
