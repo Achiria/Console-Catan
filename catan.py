@@ -617,6 +617,44 @@ def placeCity(player, free):
                             return 1
         # print(ord(typed))
 
+def correctPlacement():
+    cursorPosition = points.getPoint(int(math.floor(points.width/2)), int(math.floor(points.height / 2)))
+    cursorPosition.active = 1
+    
+    selected = 0
+    while selected == 0:
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')    
+        elif ord(typed) == 13:
+            if cursorPosition.building == 1:
+                selected = 1
+    placed = 0
+    while placed == 0:
+        print(points)
+        getch = _GetchUnix()
+        typed = getch.__call__()
+        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+            cursorPosition = points.moveCursor(cursorPosition, 'up')  
+        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+            cursorPosition = points.moveCursor(cursorPosition, 'down')  
+        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+            cursorPosition = points.moveCursor(cursorPosition, 'left')  
+        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+            cursorPosition = points.moveCursor(cursorPosition, 'right')    
+        elif ord(typed) == 13:
+            if cursorPosition.building == 0:
+                placed = 1
+
+
 def selectPort(player):
     selected = False
     while not selected:
@@ -801,7 +839,7 @@ giveManyResources()
 while True: 
     print(points)
     print("Cards: " + currentPlayer.getCards())
-    command = input("Commands (b)uild, (t)rade, buy (d)ev card, (e)nd turn: ")
+    command = input("Commands: (b)uild, (t)rade, buy (d)ev card, (p)lay dev card, (c)orrect placement, (e)nd turn: ")
 
     # command = input("Cards \
     #     hay: " + currentPlayer.cards.get('hay') + " \n\
@@ -856,7 +894,12 @@ while True:
         if (command == "t"):
             # check for port adjacency
             pass
-        
+    elif (command == "d"):
+        pass
+    elif (command == "p"):
+        pass
+    elif (command == "c"):
+        correctPlacement()  
     #TODO make this the default case of a switch? or necessary for the ending of a turn - not dependent upon input.
         #while maxPoints < 10
         #    ...
