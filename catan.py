@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from collections import deque
+import os
 from os import system, name
 import math
 import sys
@@ -58,6 +59,29 @@ class _GetchUnix:
             sys.exit()
         return ch
 
+class _GetchWindows:
+    def __call__(self):
+        import msvcrt
+        import sys
+
+        ch = msvcrt.getwch()
+
+        if ord(ch) == 3 or ord(ch) == 26:  # Ctrl+C or Ctrl+Z
+            sys.exit()
+
+        # Handle arrow keys (prefixed with '\x00' or '\xe0')
+        if ch in ('\x00', '\xe0'):
+            ch2 = msvcrt.getwch()
+            arrow_map = {
+                'H': 'UP', 
+                'P': 'DOWN',  
+                'K': 'LEFT', 
+                'M': 'RIGHT',  
+            }
+            return arrow_map.get(ch2, '')
+
+        return ch
+    
 class coord(object):
     # initialize the coordinate object
     #
@@ -338,21 +362,21 @@ class player():
 
     def getDevCards(self):
         toReturn = ""
-        if player.devCards.get('knight') > 0:
+        if self.devCards.get('knight') > 0:
             toReturn += "knight: " + player.devCards.get('knight')
-        if player.devCards.get('roadBuilder') > 0:
+        if self.devCards.get('roadBuilder') > 0:
             if len(toReturn) > 0:
                 toReturn += ", "
             toReturn += "road builder: " + player.devCards.get('roadBuilder')
-        if player.devCards.get('yearOfPlenty') > 0:
+        if self.devCards.get('yearOfPlenty') > 0:
             if len(toReturn) > 0:
                 toReturn += ", "
             toReturn += "year of plenty: " + player.devCards.get('yearOfPlenty')
-        if player.devCards.get('monopoly') > 0:
+        if self.devCards.get('monopoly') > 0:
             if len(toReturn) > 0:
                 toReturn += ", "
             toReturn += "monopoly: " + player.devCards.get('monopoly')
-        if player.devCards.get('victoryPoint') > 0:
+        if self.devCards.get('victoryPoint') > 0:
             if len(toReturn) > 0:
                 toReturn += ", "
             toReturn += "victory Point: " + player.devCards.get('victoryPoint')
@@ -401,16 +425,16 @@ def checkCommand(command):
 
 def checkCards(command, player):
     if command == "road":
-        if player.cards.get('wood') > 1 and player.cards.get('brick'):
+        if player.cards.get('wood') and player.cards.get('brick'):
             return 1
     elif command == "settlement":
-        if player.cards.get('hay') > 1 and player.cards.get('sheep') > 1 and player.cards.get('wood') > 1 and player.cards.get('brick') > 1:
+        if player.cards.get('hay') and player.cards.get('sheep') and player.cards.get('wood') and player.cards.get('brick'):
             return 1
     elif command == "city":
-        if player.cards.get('hay') > 2 and player.cards.get('ore') > 3:
+        if player.cards.get('hay') >= 2 and player.cards.get('ore') >= 3:
             return 1
     elif command == "devCard":
-        if player.cards.get('hay') > 1 and player.cards.get('sheep') > 1 and player.cards.get('ore') > 1:
+        if player.cards.get('hay') and player.cards.get('sheep') and player.cards.get('ore'):
             return 1
     return 0
 
@@ -497,15 +521,19 @@ def placeRoad(player, free):
         # print(chr(27) + "[2J")
         clear()
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        if typed == 'w' or typed == 'k'or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -539,15 +567,20 @@ def placeSettlement(player, free):
     while placed == 0:
         # print(chr(27) + "[2J")
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        print(typed)
+        if typed == 'w' or typed == 'k' or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -575,7 +608,7 @@ def placeCity(player, free):
     if player.cityCount < 1:   
         print("Not enough cities.")
         return 0
-    if not free and (player.cards.get("ore") < 2 or player.cards.get("hay") < 3):
+    if not free and (player.cards.get("hay") < 2 or player.cards.get("ore") < 3):
         print("Not enough cards.")
         return 0
 
@@ -586,15 +619,19 @@ def placeCity(player, free):
     while placed == 0:
         # print(chr(27) + "[2J")
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        if typed == 'w' or typed == 'k' or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             if cursorPosition.water == 0:
@@ -624,15 +661,19 @@ def correctPlacement():
     selected = 0
     while selected == 0:
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        if typed == 'w' or typed == 'k' or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')    
         elif ord(typed) == 13:
             if cursorPosition.building == 1:
@@ -640,15 +681,19 @@ def correctPlacement():
     placed = 0
     while placed == 0:
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        if typed == 'w' or typed == 'k' or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')    
         elif ord(typed) == 13:
             if cursorPosition.building == 0:
@@ -659,15 +704,19 @@ def selectPort(player):
     selected = False
     while not selected:
         print(points)
-        getch = _GetchUnix()
-        typed = getch.__call__()
-        if typed == 'w' or typed == 'k' or ord(typed) == 65:
+        if os.name == 'nt':
+            _Getch = _GetchWindows
+        else:
+            _Getch = _GetchUnix
+        getch = _Getch()
+        typed = getch()
+        if typed == 'w' or typed == 'k' or (len(typed) == 1 and ord(typed) == 65) or typed == 'UP':
             cursorPosition = points.moveCursor(cursorPosition, 'up')  
-        elif typed == 's' or typed == 'j' or ord(typed) == 66:
+        elif typed == 's' or typed == 'j' or (len(typed) == 1 and ord(typed) == 66) or typed == 'DOWN':
             cursorPosition = points.moveCursor(cursorPosition, 'down')  
-        elif typed == 'a' or typed == 'h' or ord(typed) == 68:
+        elif typed == 'a' or typed == 'h' or (len(typed) == 1 and ord(typed) == 68) or typed == 'LEFT':
             cursorPosition = points.moveCursor(cursorPosition, 'left')  
-        elif typed == 'd' or typed == 'l' or ord(typed) == 67:
+        elif typed == 'd' or typed == 'l' or (len(typed) == 1 and ord(typed) == 67) or typed == 'RIGHT':
             cursorPosition = points.moveCursor(cursorPosition, 'right')  
         elif ord(typed) == 13:
             # if is port
@@ -682,7 +731,7 @@ def checkRoadAdjacency():
 
 def clear(): 
     # for windows 
-    if name == 'nt': 
+    if os.name == 'nt': 
         _ = system('cls') 
   
     # for mac and linux(here, os.name is 'posix') 
@@ -780,14 +829,14 @@ for item in range(numberOfPlayers):
 print(chr(27) + "[2J")
 print("Creating new game.")
 print("Placing Settlements and Roads\n")
-time.sleep(2)
+# time.sleep(2)
 
 # Have players place their first settlement and road
 for item in range(numberOfPlayers):
     player = players[item]
     # print(player.color)
     print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your settlement.\nUse arrow keys or wasd to move the cursor. Press enter to place settlement.")
-    time.sleep(1)
+    # time.sleep(1)
     placeSettlement(player, True)
     print(bcolors.HEADER + "Player " + str(item + 1) + ": " + str(player.name) + bcolors.ENDC + "\nPlace your road.\nUse arrow keys or wasd to move the cursor. Press enter to place road.")
     placeRoad(player, True)
